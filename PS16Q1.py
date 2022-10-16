@@ -31,21 +31,44 @@ class BoxOffice:
     def __init__(self, n, w) -> None:
         pass
 
+# Validate parameters and return a list of params for the command 
+# after validation and converting to int
+def validateParams(cmd):
+    try:
+        if cmd[0] == INIT_TICKET_SYSTEM:
+            # expects two params as integers
+            if len(cmd) != 3:
+                logp.write("Missing or extra parameters", INIT_TICKET_SYSTEM)
+                return [ERR_MISSING_PARAMS]
+
+            # try to typecase parameters to int to validate them for integers 
+            # if wrong params, it will cause excepition
+            return [int(cmd[1]), int(cmd[2])]
+
+        elif cmd[0] == GIVE_TICKET:
+            # No parameters are expected, ignore if any given
+            return [ERR_SUCCESS]
+        else:
+            # All remaining commands only take 1 integer parameter as input
+            if len(cmd) != 2:
+                logp.write("Missing or extra parameters", INIT_TICKET_SYSTEM)
+                return [ERR_MISSING_PARAMS]
+
+            return [int(cmd[1])]
+    except:
+        logp.write("Invalid parameters", cmd[0])
+        return [ERR_INVALID_PARAMS]
+
 def processInput(line):
     cmd = line.strip().split(":")
+    params = validateParams(cmd)
+
+    if params[0] < 0:
+        # Validation failed
+        return params[0]
 
     if cmd[0] == INIT_TICKET_SYSTEM:
-        # Validate command input
-        # Expect two params each is an integer
-        if len(cmd) != 3:
-            logp.write("Missing parameters", INIT_TICKET_SYSTEM)
-            return ERR_MISSING_PARAMS
-
-        try:
-            bo = BoxOffice(int(cmd[1]), int(cmd[2]))
-        except:
-            logp.write("Invalid parameters.", INIT_TICKET_SYSTEM)
-            return ERR_INVALID_PARAMS
+        bo = BoxOffice(params[0], params[1])
 
     elif cmd[0] == ADD_PERSON:
         print(ADD_PERSON)
