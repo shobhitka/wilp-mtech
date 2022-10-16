@@ -24,12 +24,63 @@ class Logger(object):
         # For now dump on stdout too
         print(data)
 
+# prompt logger
 logp = Logger("promptsPS16Q1.txt")
+
+# output logger
 logo = Logger("outputPS16Q1.txt")
 
+class Queue:
+    def __init__(self, n):
+        self.size = n
+        self.item = [ None for i in range(n) ]
+        self.cnt = 0
+        self.front = 0
+        self.rear = 0
+
+    def isEmpty(self):
+        if self.cnt == 0:
+            return True
+        else:
+            return False
+
+    def size(self):
+        return self.cnt
+
+    def enqueu(self, pid):
+        if self.cnt == self.size:
+            return -1
+
+        self.item[self.last] = pid
+        self.last = (self.last + 1) % self.max
+        self.cnt = self.cnt + 1
+        return 0
+
+    def dequeue(self):
+        if self.isEmpty():
+            return -1
+
+        self.item[self.front] = None
+        self.front = (self.front + 1) % self.size
+        return 0
+
+    def getFront(self):
+        if self.isEmpty():
+            return -1
+
+        return self.item[self.front]
+
 class BoxOffice:
-    def __init__(self, n, w) -> None:
-        pass
+    def __init__(self, n, w):
+        self.n = n
+        self.w = w
+
+        # Initialize as many quesus as the number of windows
+        self.queues = [ Queue(n) for j in range(w)]
+
+        # Initialise all windows as closed except 1st window
+        self.windows = [ False for i in range(w) ]
+        self.windows[0] = True
 
 # Validate parameters and return a list of params for the command 
 # after validation and converting to int
