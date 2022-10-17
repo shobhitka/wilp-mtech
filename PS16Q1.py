@@ -1,3 +1,7 @@
+from asyncore import write
+from textwrap import wrap
+
+
 INIT_TICKET_SYSTEM  = 'ticketSystem'
 ADD_PERSON          = 'addPerson'
 GET_WINDOW          = 'getWindow'
@@ -45,7 +49,7 @@ class Queue:
         else:
             return False
 
-    def size(self):
+    def getSize(self):
         return self.cnt
 
     def enqueu(self, pid):
@@ -71,6 +75,19 @@ class Queue:
 
         return self.item[self.front]
 
+    def getQueueElems(self):
+        if self.isEmpty():
+            return []
+
+        i = self.front
+        q = []
+        while i != self.rear:
+            q = q + [self.item[i]]
+
+        # last rear element
+        q = q + [self.item[self.rear]]
+        return q
+
 class BoxOffice:
     def __init__(self, n, w):
         self.n = n
@@ -88,6 +105,9 @@ class BoxOffice:
             return self.windows[win];
         else:
             return False
+
+    def getWindow(self, win):
+        return self.queues[win].getQueueElems()
 
 # Validate parameters and return a list of params for the command 
 # after validation and converting to int
@@ -141,7 +161,8 @@ def processInput(line):
     elif cmd[0] == ADD_PERSON:
         print(ADD_PERSON)
     elif cmd[0] == GET_WINDOW:
-        print(GET_WINDOW)
+        retVal = bo.getWindow(params[0])
+        logo.write(line.strip() + " >> " + str(retVal))
     elif cmd[0] == IS_OPEN:
         if params[0] < 0 or params[0] > bo.w:
             return ERR_INVALID_INPUT
