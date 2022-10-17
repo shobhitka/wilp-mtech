@@ -10,8 +10,6 @@ ERR_MISSING_PARAMS  = -1
 ERR_INVALID_PARAMS  = -2
 ERR_INVALID_INPUT   = -3
 
-bo = None
-
 class Logger(object):
     def __init__ (self, file = "promptsPS16Q1.txt"):
         self.log = open(file, "w")
@@ -85,6 +83,12 @@ class BoxOffice:
         self.windows = [ False for i in range(w) ]
         self.windows[0] = True
 
+    def isOpen(self, win):
+        if 0 <= win < self.w:
+            return self.windows[win];
+        else:
+            return False
+
 # Validate parameters and return a list of params for the command 
 # after validation and converting to int
 def validateParams(cmd):
@@ -114,11 +118,17 @@ def validateParams(cmd):
         return [ERR_INVALID_PARAMS]
 
 def processInput(line):
+    global bo
     cmd = line.strip().split(":")
 
-    if cmd[0] != INIT_TICKET_SYSTEM and bo is None:
-        logp.write("Invalid input", cmd[0])
-        return ERR_INVALID_INPUT
+    try:
+        bo
+    except:
+        # if command is not init and bo is not initialized then
+        # init command was not sent before issuing other commands
+        if cmd[0] != INIT_TICKET_SYSTEM:
+            logp.write("Invalid input", cmd[0])
+            return ERR_INVALID_INPUT
 
     params = validateParams(cmd)
 
@@ -127,14 +137,20 @@ def processInput(line):
         return params[0]
 
     if cmd[0] == INIT_TICKET_SYSTEM:
-        global bo
         bo = BoxOffice(params[0], params[1])
     elif cmd[0] == ADD_PERSON:
         print(ADD_PERSON)
     elif cmd[0] == GET_WINDOW:
         print(GET_WINDOW)
     elif cmd[0] == IS_OPEN:
-        print(IS_OPEN)
+        if params[0] < 0 or params[0] > bo.w:
+            return ERR_INVALID_INPUT
+        else:
+            if bo.isOpen(params[0]):
+                logo.write(line.strip() + " >> TRUE")
+            else:
+                logo.write(line.strip() + " >> FALSE")
+
     elif cmd[0] == GIVE_TICKET:
         print(GIVE_TICKET)
     else:
