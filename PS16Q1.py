@@ -8,6 +8,9 @@ GIVE_TICKET         = 'giveTicket'
 ERR_SUCCESS         = 0
 ERR_MISSING_PARAMS  = -1
 ERR_INVALID_PARAMS  = -2
+ERR_INVALID_INPUT   = -3
+
+bo = None
 
 class Logger(object):
     def __init__ (self, file = "promptsPS16Q1.txt"):
@@ -112,6 +115,11 @@ def validateParams(cmd):
 
 def processInput(line):
     cmd = line.strip().split(":")
+
+    if cmd[0] != INIT_TICKET_SYSTEM and bo is None:
+        logp.write("Invalid input", cmd[0])
+        return ERR_INVALID_INPUT
+
     params = validateParams(cmd)
 
     if params[0] < 0:
@@ -119,8 +127,8 @@ def processInput(line):
         return params[0]
 
     if cmd[0] == INIT_TICKET_SYSTEM:
+        global bo
         bo = BoxOffice(params[0], params[1])
-
     elif cmd[0] == ADD_PERSON:
         print(ADD_PERSON)
     elif cmd[0] == GET_WINDOW:
