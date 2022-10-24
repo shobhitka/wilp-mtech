@@ -92,7 +92,7 @@ class Queue:
         return q
 
 class BoxOffice:
-    def __init__(self, n, w):
+    def __init__(self, w, n):
         self.n = n
         self.w = w
 
