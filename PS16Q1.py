@@ -66,9 +66,11 @@ class Queue:
         if self.isEmpty():
             return -1
 
+        item = self.item[self.front]
         self.item[self.front] = None
         self.front = (self.front + 1) % self.size
-        return 0
+        self.cnt = self.cnt - 1
+        return item
 
     def getFront(self):
         if self.isEmpty():
@@ -142,6 +144,23 @@ class BoxOffice:
             self.queues[to_open].enqueu(personId)
             return to_open + 1
 
+    def giveTicket(self):
+        cnt = 0
+        for i in range(self.w):
+            # window closed
+            if self.windows[i] == False:
+                continue
+
+            # Window open but empty
+            if self.queues[i].getSize() == 0:
+                continue
+
+            # give ticket at this window
+            self.queues[i].dequeue()
+            cnt = cnt + 1
+
+        return cnt
+
 # Validate parameters and return a list of params for the command
 # after validation and converting to int
 def validateParams(cmd):
@@ -171,6 +190,10 @@ def validateParams(cmd):
         return [ERR_INVALID_PARAMS]
 
 def processInput(line):
+    if line == "\n":
+        # skip empty input line
+        return ERR_SUCCESS
+
     global bo
     cmd = line.strip().split(":")
 
@@ -210,7 +233,8 @@ def processInput(line):
                 logo.write(line.strip() + " >> FALSE")
 
     elif cmd[0] == GIVE_TICKET:
-        print(GIVE_TICKET)
+        retVal = bo.giveTicket()
+        logo.write(line.strip() + " >> " + str(retVal))
     else:
         print("Unsupported command")
 
