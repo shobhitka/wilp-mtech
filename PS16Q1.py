@@ -1,3 +1,4 @@
+from asyncio import queues
 from asyncore import write
 from textwrap import wrap
 
@@ -56,8 +57,8 @@ class Queue:
         if self.cnt == self.size:
             return -1
 
-        self.item[self.last] = pid
-        self.last = (self.last + 1) % self.max
+        self.item[self.rear] = pid
+        self.rear = (self.rear + 1) % self.size
         self.cnt = self.cnt + 1
         return 0
 
@@ -81,11 +82,11 @@ class Queue:
 
         i = self.front
         q = []
-        while i != self.rear:
+        while True:
             q = q + [self.item[i]]
-
-        # last rear element
-        q = q + [self.item[self.rear]]
+            i = (i + 1) % self.size
+            if i == self.rear:
+                break
         return q
 
 class BoxOffice:
@@ -94,22 +95,54 @@ class BoxOffice:
         self.w = w
 
         # Initialize as many quesus as the number of windows
-        self.queues = [ Queue(n) for j in range(w)]
+        self.queues = [ Queue(n) for j in range(w) ]
 
         # Initialise all windows as closed except 1st window
         self.windows = [ False for i in range(w) ]
         self.windows[0] = True
 
     def isOpen(self, win):
-        if 0 <= win < self.w:
-            return self.windows[win];
+        index = win - 1
+        if 0 <= index < self.w:
+            return self.windows[index];
         else:
             return False
 
     def getWindow(self, win):
-        return self.queues[win].getQueueElems()
+        # use window index
+        return self.queues[win - 1].getQueueElems()
 
-# Validate parameters and return a list of params for the command 
+    def addPerson(self, personId):
+        window = -1
+        cnt = self.n
+        to_open = -1
+        for i in range (self.w):
+            # loop through all open windows and choose the one with
+            # smallest queue size
+            # This will also make sure if two windows are having same 
+            # size, the one first checked will be used
+            if (self.windows[i] is True):
+                if self.queues[i].getSize() < cnt:
+                    cnt =  self.queues[i].getSize()
+                    window = i
+            elif to_open == -1:
+                # in the same parsing also store the next closed window 
+                # that can be opened in case no open windoes have space
+                to_open = i
+
+        if window == -1 and to_open == -1:
+            # All windows are open and non ehas any free space
+            return -1
+
+        if window != -1:
+            self.queues[window].enqueu(personId)
+            return window + 1 # Window absolute ID
+        else:
+            self.windows[to_open] = True
+            self.queues[to_open].enqueu(personId)
+            return to_open + 1
+
+# Validate parameters and return a list of params for the command
 # after validation and converting to int
 def validateParams(cmd):
     try:
@@ -159,7 +192,11 @@ def processInput(line):
     if cmd[0] == INIT_TICKET_SYSTEM:
         bo = BoxOffice(params[0], params[1])
     elif cmd[0] == ADD_PERSON:
-        print(ADD_PERSON)
+        retVal = bo.addPerson(params[0])
+        if retVal < 0:
+            logo.write(line + " >> all queues are full")
+        else:
+            logo.write(line.strip() + " >> " + str(retVal))
     elif cmd[0] == GET_WINDOW:
         retVal = bo.getWindow(params[0])
         logo.write(line.strip() + " >> " + str(retVal))
