@@ -83,46 +83,52 @@ def parseInputFile(file):
                         item = line.strip().split("/")
                         item_list += [[ item[0].strip(), int(item[1]), int(item[2]) ]]
             except:
-                logp.write("Invalid input")
                 input.close()
                 return ERR_INVALID_INPUT
             
             input.close()
     except:
-        logp.write("Invalid input file")
         return ERR_INVALID_FILE
 
 def main():
-    global profit_to_weight
+    global calorie_to_weight
 
     # first slot will be unused as we will create a max heap in this array
     # just initialize to some sane value
-    profit_to_weight = [[ -1, 0.0 ]]
+    calorie_to_weight = [[ -1, 0.0 ]]
 
-    parseInputFile("inputPS16Q2.txt")
-    print("Item Cnt: " + str(item_cnt))
-    print("Max weight: " + str(max_weight))
-    print("Items: " + str(item_list[0][1]))
+    retval = parseInputFile("inputPS16Q2.txt")
+    if retval == ERR_INVALID_FILE:
+        print("Invalid filename")
+        exit
+    elif retval == ERR_INVALID_INPUT:
+        print("Invalid input data")
+        exit
+
+    logp.write("Item Cnt: " + str(item_cnt))
+    logp.write("Max weight: " + str(max_weight))
+    logp.write("Items: " + str(item_list))
 
     for i in range(1, item_cnt + 1, 1):
         ratio = round((item_list[i - 1][2] / item_list[i - 1][1]), 2)
 
         # store the calorie to weight ratio along with the item_list index for the item
-        profit_to_weight += [[ i - 1, ratio ]]
+        calorie_to_weight += [[ i - 1, ratio ]]
 
-    print(str(profit_to_weight))
+    logp.write("Unsorted calorie_to_weight ratio: " + str(calorie_to_weight))
 
     # sort the array so that we start picking the items with largest
     # calorie to weight ratio - greedy algorithm
-    heapSort(profit_to_weight, len(profit_to_weight))
-    print(str(profit_to_weight))
+    heapSort(calorie_to_weight, len(calorie_to_weight))
+
+    logp.write("Sorted calorie_to_weight ratio: " + str(calorie_to_weight))
 
     # Now we simply need to prepare the knapsack contents
     output = [ 0 for i in range(item_cnt) ]
     target_wt = max_weight
     calories = 0
     for i in range(item_cnt, 0, -1):
-        index = profit_to_weight[i][0]
+        index = calorie_to_weight[i][0]
         if item_list[index][1] > target_wt:
             break;
         output[index] = 1
@@ -130,7 +136,7 @@ def main():
         calories += item_list[index][2] * item_list[index][1]
 
     if i > 0: # some items not yet covered
-        index = profit_to_weight[i][0]
+        index = calorie_to_weight[i][0]
         output[index] = target_wt / item_list[index][1]
         calories += (output[index] * item_list[index][2] * item_list[index][1])
 
