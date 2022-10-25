@@ -117,5 +117,28 @@ def main():
     heapSort(profit_to_weight, len(profit_to_weight))
     print(str(profit_to_weight))
 
+    # Now we simply need to prepare the knapsack contents
+    output = [ 0 for i in range(item_cnt) ]
+    target_wt = max_weight
+    calories = 0
+    for i in range(item_cnt, 0, -1):
+        index = profit_to_weight[i][0]
+        if item_list[index][1] > target_wt:
+            break;
+        output[index] = 1
+        target_wt -= item_list[index][1]
+        calories += item_list[index][2] * item_list[index][1]
+
+    if i > 0: # some items not yet covered
+        index = profit_to_weight[i][0]
+        output[index] = target_wt / item_list[index][1]
+        calories += (output[index] * item_list[index][2] * item_list[index][1])
+
+    logo.write("Total Calories: " + str(calories))
+    logo.write("Food Item selection Ratio:")
+
+    for i in range(item_cnt):
+        logo.write(item_list[i][0] + ": " + str(output[i]))
+
 if __name__ == "__main__":
     main()
