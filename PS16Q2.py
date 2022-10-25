@@ -1,8 +1,11 @@
 # Define errors
 ERR_SUCCESS         = 0
-ERR_MISSING_PARAMS  = -1
-ERR_INVALID_PARAMS  = -2
-ERR_INVALID_INPUT   = -3
+ERR_INVALID_INPUT   = -1
+ERR_INVALID_FILE    = -2
+
+# Define inputs
+FOOD_ITEM_CNT       = "Food Items"
+KNAPSACK_MAX_WT     = "Maximum Bag Weight"
 
 class Logger(object):
     def __init__ (self, file = "outputPS16Q2.txt"):
@@ -63,17 +66,37 @@ def heapSort(arr, n):
 
         max_heapify(arr, i, 1)
 
-def main():
-    arr = [0, 12, 9, 11, 13, 15, 5, 6, 7]
-    with open("inputPS16Q2.txt") as input:
-        for line in input:
-            logp.write(line.strip())
+def parseInputFile(file):
+    global item_list
+    item_list = []
+    global item_cnt
+    global max_weight
+    try:
+        with open(file) as input:
+            try:
+                for line in input:
+                    if line.find(FOOD_ITEM_CNT) != -1:
+                        item_cnt = int(line.split(":")[1])
+                    elif line.find(KNAPSACK_MAX_WT) != -1:
+                        max_weight = int(line.split(":")[1])
+                    else: # Food item details
+                        item = line.strip().split("/")
+                        item_list = item_list + [item[0].strip(), int(item[1]), int(item[2])]
+            except:
+                logp.write("Invalid input")
+                input.close()
+                return ERR_INVALID_INPUT
             
-        input.close()
+            input.close()
+    except:
+        logp.write("Invalid input file")
+        return ERR_INVALID_FILE
 
-    heapSort(arr, len(arr))
-
-    print(str(arr))
+def main():
+    parseInputFile("inputPS16Q2.txt")
+    print("Item Cnt: " + str(item_cnt))
+    print("Max weight: " + str(max_weight))
+    print("Items: " + str(item_list))
 
 if __name__ == "__main__":
     main()
