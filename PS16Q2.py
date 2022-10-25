@@ -34,10 +34,10 @@ def max_heapify(arr, n , i):
     right = 2 * root + 1
     max = root
 
-    if left < n and arr[left] > arr[root]:
+    if left < n and arr[left][1] > arr[root][1]:
         max = left
 
-    if right < n and arr[max] < arr[right]:
+    if right < n and arr[max][1] < arr[right][1]:
         max = right
     
     # swap the root with max element unless root is really max
@@ -81,7 +81,7 @@ def parseInputFile(file):
                         max_weight = int(line.split(":")[1])
                     else: # Food item details
                         item = line.strip().split("/")
-                        item_list = item_list + [item[0].strip(), int(item[1]), int(item[2])]
+                        item_list += [[ item[0].strip(), int(item[1]), int(item[2]) ]]
             except:
                 logp.write("Invalid input")
                 input.close()
@@ -93,10 +93,29 @@ def parseInputFile(file):
         return ERR_INVALID_FILE
 
 def main():
+    global profit_to_weight
+
+    # first slot will be unused as we will create a max heap in this array
+    # just initialize to some sane value
+    profit_to_weight = [[ -1, 0.0 ]]
+
     parseInputFile("inputPS16Q2.txt")
     print("Item Cnt: " + str(item_cnt))
     print("Max weight: " + str(max_weight))
-    print("Items: " + str(item_list))
+    print("Items: " + str(item_list[0][1]))
+
+    for i in range(1, item_cnt + 1, 1):
+        ratio = round((item_list[i - 1][2] / item_list[i - 1][1]), 2)
+
+        # store the calorie to weight ratio along with the item_list index for the item
+        profit_to_weight += [[ i - 1, ratio ]]
+
+    print(str(profit_to_weight))
+
+    # sort the array so that we start picking the items with largest
+    # calorie to weight ratio - greedy algorithm
+    heapSort(profit_to_weight, len(profit_to_weight))
+    print(str(profit_to_weight))
 
 if __name__ == "__main__":
     main()
