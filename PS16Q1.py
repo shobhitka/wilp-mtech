@@ -1,8 +1,4 @@
-from asyncio import queues
-from asyncore import write
-from textwrap import wrap
-
-
+# define operations on the ticketing system
 INIT_TICKET_SYSTEM  = 'ticketSystem'
 ADD_PERSON          = 'addPerson'
 GET_WINDOW          = 'getWindow'
@@ -16,7 +12,7 @@ ERR_INVALID_PARAMS  = -2
 ERR_INVALID_INPUT   = -3
 
 class Logger(object):
-    def __init__ (self, file = "promptsPS16Q1.txt"):
+    def __init__ (self, file = "outputPS16Q1.txt"):
         self.log = open(file, "w")
 
     def write (self, message, prefix = ""):
@@ -25,7 +21,7 @@ class Logger(object):
         else:
             data = message + "\n"
 
-        self.log.write(data)
+        self.log.write(data + "\n")
 
         # For now dump on stdout too
         print(data)
@@ -36,6 +32,9 @@ logp = Logger("promptsPS16Q1.txt")
 # output logger
 logo = Logger("outputPS16Q1.txt")
 
+# Queue ADT implementation. Use explicitely a count variable 'cnt'
+# 'cnt' directly tracks the queue size, with this we do not waste
+# one slot to distinguish between full and empty when 'front' == 'rear'
 class Queue:
     def __init__(self, n):
         self.size = n
@@ -78,6 +77,9 @@ class Queue:
 
         return self.item[self.front]
 
+    # method to get the queue list of filled slots
+    # loop though all slots. Worst case queue is full
+    # and this routine will run in O(n) time
     def getQueueElems(self):
         if self.isEmpty():
             return []
@@ -93,10 +95,13 @@ class Queue:
 
 class BoxOffice:
     def __init__(self, w, n):
+        # queue size
         self.n = n
+
+        # number of windows
         self.w = w
 
-        # Initialize as many quesus as the number of windows
+        # Initialize as many queues as the number of windows
         self.queues = [ Queue(n) for j in range(w) ]
 
         # Initialise all windows as closed except 1st window
@@ -116,13 +121,15 @@ class BoxOffice:
 
     def addPerson(self, personId):
         window = -1
-        cnt = self.n
         to_open = -1
+        cnt = self.n
         for i in range (self.w):
             # loop through all open windows and choose the one with
             # smallest queue size
             # This will also make sure if two windows are having same 
-            # size, the one first checked will be used
+            # size, the one with smalles index(window ID) will be used
+            # worst case this will loop through all windows and find
+            # them all open and full. Will run in O(w) time
             if (self.windows[i] is True):
                 if self.queues[i].getSize() < cnt:
                     cnt =  self.queues[i].getSize()
@@ -133,19 +140,25 @@ class BoxOffice:
                 to_open = i
 
         if window == -1 and to_open == -1:
-            # All windows are open and non ehas any free space
+            # All windows are open and none has any free space
             return -1
 
         if window != -1:
+            # found a open window with smallest queue
             self.queues[window].enqueu(personId)
             return window + 1 # Window absolute ID
         else:
+            # Open a new window and enqueue to that window
             self.windows[to_open] = True
             self.queues[to_open].enqueu(personId)
             return to_open + 1
 
     def giveTicket(self):
         cnt = 0
+        # This has to loop through the window list
+        # Worst case all windows might be open and we have to
+        # giveTicket at all of them. So this will run in O(w)
+        # time
         for i in range(self.w):
             # window closed
             if self.windows[i] == False:
@@ -194,10 +207,14 @@ def processInput(line):
         # skip empty input line
         return ERR_SUCCESS
 
+    # declare global BoxOffice object
     global bo
     cmd = line.strip().split(":")
 
     try:
+        # quick check if this is initialized or not
+        # should be initialized for all commands except
+        # INIT_TICKET_SYSTEM
         bo
     except:
         # if command is not init and bo is not initialized then
@@ -206,6 +223,7 @@ def processInput(line):
             logp.write("Invalid input", cmd[0])
             return ERR_INVALID_INPUT
 
+    # Further validation of each command and its parameters
     params = validateParams(cmd)
 
     if params[0] < 0:
@@ -217,14 +235,14 @@ def processInput(line):
     elif cmd[0] == ADD_PERSON:
         retVal = bo.addPerson(params[0])
         if retVal < 0:
-            logo.write(line + " >> all queues are full")
+            logo.write(line.strip() + " >> all queues are full")
         else:
             logo.write(line.strip() + " >> " + str(retVal))
     elif cmd[0] == GET_WINDOW:
         retVal = bo.getWindow(params[0])
         logo.write(line.strip() + " >> " + str(retVal))
     elif cmd[0] == IS_OPEN:
-        if params[0] < 0 or params[0] > bo.w:
+        if params[0] < 1 or params[0] > bo.w:
             return ERR_INVALID_INPUT
         else:
             if bo.isOpen(params[0]):
