@@ -1,3 +1,5 @@
+import sys
+
 # Define errors
 ERR_SUCCESS         = 0
 ERR_INVALID_INPUT   = -1
@@ -99,11 +101,9 @@ def main():
 
     retval = parseInputFile("inputPS16Q2.txt")
     if retval == ERR_INVALID_FILE:
-        print("Invalid filename")
-        exit
+        sys.exit("File could not be found/opened: inputPS16Q2.txt")
     elif retval == ERR_INVALID_INPUT:
-        print("Invalid input data")
-        exit
+        sys.exit("Invalid input data")
 
     logp.write("Item Cnt: " + str(item_cnt))
     logp.write("Max weight: " + str(max_weight))

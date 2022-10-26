@@ -1,3 +1,5 @@
+import sys
+
 # define operations on the ticketing system
 INIT_TICKET_SYSTEM  = 'ticketSystem'
 ADD_PERSON          = 'addPerson'
@@ -259,14 +261,19 @@ def processInput(line):
     return ERR_SUCCESS
 
 def main():
-    with open("inputPS16Q1.txt") as input:
-        for line in input:
-            retVal = processInput(line)
-            if retVal < 0:
-                logp.write("Invalid input. Exiting")
-                break
+    try:
+        with open("inputPS16Q1.txt") as input:
+            for line in input:
+                retVal = processInput(line)
+                if retVal < 0:
+                    logp.write("Invalid input. Exiting")
+                    break
 
-        input.close()
+            input.close()
+    except IOError:
+        sys.exit("File could not be found/opened: inputPS16Q1.txt")
+    except:
+        sys.exit("Internal error")
 
 if __name__ == "__main__":
     main()
