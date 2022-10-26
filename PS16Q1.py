@@ -25,8 +25,9 @@ class Logger(object):
 
         self.log.write(data + "\n")
 
-        # For now dump on stdout too
-        print(data)
+        # For now dump on stdout too, commented for final code
+        # only log in specififed files
+        # print(data)
 
 # prompt logger
 logp = Logger("promptsPS16Q1.txt")

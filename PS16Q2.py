@@ -21,8 +21,9 @@ class Logger(object):
 
         self.log.write(data + "\n")
 
-        # For now dump on stdout too
-        print(data)
+        # For now dump on stdout too, commented for final code
+        # only log in specififed files
+        # print(data)
 
 # prompt logger
 logp = Logger("promptsPS16Q2.txt")
@@ -101,9 +102,11 @@ def main():
 
     retval = parseInputFile("inputPS16Q2.txt")
     if retval == ERR_INVALID_FILE:
-        sys.exit("File could not be found/opened: inputPS16Q2.txt")
+        logp.write("File could not be found/opened: inputPS16Q2.txt")
+        sys.exit()
     elif retval == ERR_INVALID_INPUT:
-        sys.exit("Invalid input data")
+        logp.write("Invalid input data")
+        sys.exit()
 
     logp.write("Item Cnt: " + str(item_cnt))
     logp.write("Max weight: " + str(max_weight))
