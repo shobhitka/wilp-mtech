@@ -38,12 +38,13 @@ logo = Logger("outputPS16Q1.txt")
 # 'cnt' directly tracks the queue size, with this we do not waste
 # one slot to distinguish between full and empty when 'front' == 'rear'
 class Queue:
-    def __init__(self, n):
+    def __init__(self, win, n):
         self.size = n
         self.item = [ None for i in range(n) ]
         self.cnt = 0
         self.front = 0
         self.rear = 0
+        self.win = win
 
     def isEmpty(self):
         if self.cnt == 0:
@@ -54,8 +55,9 @@ class Queue:
     def getSize(self):
         return self.cnt
 
-    def enqueu(self, pid):
+    def enqueue(self, pid):
         if self.cnt == self.size:
+            logp.write("Enqueue failed: Queue full for window id - " + str(self.win + 1))
             return -1
 
         self.item[self.rear] = pid
@@ -65,6 +67,7 @@ class Queue:
 
     def dequeue(self):
         if self.isEmpty():
+            logp.write("Dequeue failed: Queue empty for window id - " + str(self.win + 1))
             return -1
 
         item = self.item[self.front]
@@ -104,7 +107,7 @@ class BoxOffice:
         self.w = w
 
         # Initialize as many queues as the number of windows
-        self.queues = [ Queue(n) for j in range(w) ]
+        self.queues = [ Queue(j, n) for j in range(w) ]
 
         # Initialise all windows as closed except 1st window
         self.windows = [ False for i in range(w) ]
@@ -147,12 +150,12 @@ class BoxOffice:
 
         if window != -1:
             # found a open window with smallest queue
-            self.queues[window].enqueu(personId)
+            self.queues[window].enqueue(personId)
             return window + 1 # Window absolute ID
         else:
             # Open a new window and enqueue to that window
             self.windows[to_open] = True
-            self.queues[to_open].enqueu(personId)
+            self.queues[to_open].enqueue(personId)
             return to_open + 1
 
     def giveTicket(self):
