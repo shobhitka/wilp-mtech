@@ -118,11 +118,17 @@ class BoxOffice:
         if 0 <= index < self.w:
             return self.windows[index];
         else:
+            logp.write("Invalid window id given: " + str(win))
             return False
 
     def getWindow(self, win):
         # use window index
-        return self.queues[win - 1].getQueueElems()
+        index = win - 1
+        if 0 <= index < self.w:
+            return self.queues[win - 1].getQueueElems()
+        else:
+            logp.write("Invalid window id given: " + str(win))
+            return []
 
     def addPerson(self, personId):
         window = -1
