@@ -16,7 +16,7 @@ class ChannelThread(threading.Thread):
             try:
                 # receive message and dump them for now
                 bytes, address = self.chmgr.receive_messages()
-                print("Msg: " + bytes.decode() + ", from: " + str(address))
+                print("\nMsg: " + bytes.decode() + ", from: " + str(address))
 
                 if self.exit_evt.is_set():
                     break
