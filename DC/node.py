@@ -1,3 +1,4 @@
+from re import A
 import sys
 from channel import ChannelMgr
 
@@ -31,25 +32,38 @@ class Node:
 
     def initialize(self):
         try:
-            comms = ChannelMgr(self.sid, self.sites[self.sid]['ip'], self.sites[self.sid]['port'])
+            self.comms = ChannelMgr(self.sid, self.sites[self.sid]['ip'], self.sites[self.sid]['port'])
 
             # start the thread to receive all inbound messages
-            comms.start_receiver()
+            self.comms.start_receiver()
 
             # initialize outbound communication channel with all other sites
             for key in self.sites:
                 if key == self.sid:
                     continue
 
-                comms.open(key, self.sites[key]['ip'], self.sites[key]['port'])
+                self.comms.open(key, self.sites[key]['ip'], self.sites[key]['port'])
                 print(f"Initialized params for channel: ({self.sid} -> {key})")
             
             print(f"Site ready: {self.sid}")
         except:
             sys.exit("Failed initializing site")
 
+    def cmd_usage(self):
+        print("help: This help information")
+        print("exit: quit the application")
+
+    def processCmd(self, cmd):
+        if cmd == "help":
+            self.cmd_usage();
+        elif cmd == "exit":
+            print("Cleaning up ... ")
+            self.comms.stop_receiver()
+            sys.exit("Exiting")
+
     def start(self):
         while 1:
             cmd = input(f"(site:{self.sid})$ ")
 
             # Process commands
+            self.processCmd(cmd)

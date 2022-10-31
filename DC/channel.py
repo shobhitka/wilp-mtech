@@ -7,6 +7,7 @@ class ChannelThread(threading.Thread):
 
     def __init__(self, chmgr):
         self.chmgr = chmgr
+        self.exit_evt = threading.Event()
         threading.Thread.__init__(self)
 
     def run(self):
@@ -16,9 +17,20 @@ class ChannelThread(threading.Thread):
                 # receive message and dump them for now
                 bytes, address = self.chmgr.receive_messages()
                 print("Msg: " + bytes.decode() + ", from: " + str(address))
+
+                if self.exit_evt.is_set():
+                    break
+            except socket.timeout:
+                if self.exit_evt.is_set():
+                    break
+                else:
+                    continue
             except:
                 print("Receiver channel thread terminated. Exiting")
                 sys.exit(1)
+
+    def set_stop_event(self):
+        self.exit_evt.set()
 
 class ChannelMgr:
 
@@ -35,6 +47,7 @@ class ChannelMgr:
         try:
             # Create the receive channel socket
             self.skt = socket.socket(family=socket.AF_INET, type = socket.SOCK_DGRAM)
+            self.skt.settimeout(5)
 
             # bind it to local port
             self.skt.bind((sip, sport))
@@ -69,3 +82,8 @@ class ChannelMgr:
 
     def getsite(self):
         return self.sid
+        self.chthread.join()
+
+    def stop_receiver(self):
+        self.chthread.set_stop_event()
+        self.chthread.join()
