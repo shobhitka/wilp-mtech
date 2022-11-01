@@ -5,8 +5,9 @@ from time import sleep
 
 class ChannelThread(threading.Thread):
 
-    def __init__(self, chmgr):
+    def __init__(self, chmgr, node):
         self.chmgr = chmgr
+        self.node = node
         self.exit_evt = threading.Event()
         threading.Thread.__init__(self)
 
@@ -17,6 +18,8 @@ class ChannelThread(threading.Thread):
                 # receive message and dump them for now
                 bytes, address = self.chmgr.receive_messages()
                 print("\nMsg: " + bytes.decode() + ", from: " + str(address))
+
+                self.node.callback(bytes.decode())
 
                 if self.exit_evt.is_set():
                     break
@@ -36,7 +39,7 @@ class ChannelMgr:
 
     MAX_BUFF_SIZE = 64
 
-    def __init__(self, sid, sip, sport):
+    def __init__(self, sid, sip, sport, node):
         self.sid = sid
         self.sip = sip
         self.sport = sport
@@ -53,7 +56,7 @@ class ChannelMgr:
             self.skt.bind((sip, sport))
 
             # create a receiver thread for messages
-            self.chthread = ChannelThread(self)
+            self.chthread = ChannelThread(self, node)
         except:
             print("Creating communication channel receiver thread failed")
             sys.exit()

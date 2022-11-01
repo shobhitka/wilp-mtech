@@ -14,7 +14,18 @@ class Token:
         self.q = queue.Queue()
 
     def encode(self):
-        return str(self.LN)
+        return ','.join(str(item) for item in self.LN) + ":" + ",".join(str(item) for item in (list(self.q.queue))) + ":"
+
+    def decode(self, data):
+        ln_list = data[1].split(",")
+        self.LN = [ int(item) for item in ln_list ]
+
+        q_list = data[2].split(",")
+        self.q = queue.Queue()
+        for item in q_list:
+            if item == '':
+                break
+            self.q.put(item)
 
 class Node:
     def __init__(self, sid):
@@ -48,7 +59,7 @@ class Node:
 
     def initialize(self):
         try:
-            self.comms = ChannelMgr(self.sid, self.sites[self.sid]['ip'], self.sites[self.sid]['port'])
+            self.comms = ChannelMgr(self.sid, self.sites[self.sid]['ip'], self.sites[self.sid]['port'], self)
 
             # start the thread to receive all inbound messages
             self.comms.start_receiver()
@@ -68,6 +79,7 @@ class Node:
                 self.has_token = True
             else:
                 self.has_token = False
+            self.requested_token = False
 
             print(f"Site ready: {self.sid}, HAS_TOKEN: {self.has_token}")
 
@@ -123,7 +135,7 @@ class Node:
         print(" Q: " + str(list(self.token.q.queue)))
         if not self.token.q.empty():
             next = self.token.q.get()
-            msg = ["TOKEN", self.token.encode()]
+            msg = "TOKEN:" + self.token.encode()
             print("TOKEN, " + str(self.sid) + " --> " + str(key))
             self.comms.send(next, msg)
 
@@ -142,10 +154,36 @@ class Node:
             print("RN = " + str(self.RN))
 
             # broadcast REQUEST message
-            msg = ["REQUEST", self.sid, self.RN[self.sid - 1]]
+            msg = "REQUEST:" +  str(self.sid) + ":" + str(self.RN[self.sid - 1])
             for key in self.sites:
                 if key == self.sid:
                     continue
                 else:
                     print("REQUEST, " + str(self.sid) + " --> " + str(key) + ", SN: " + str(self.RN[self.sid]))
                     self.comms.send(key, str(msg))
+                    self.requested_token = True
+
+    def callback(self, msg):
+        cmd = msg.split(":")
+
+        if cmd[0] == "REQUEST":
+            # Token request message received
+            site = int(cmd[1])
+            sn = int(cmd[2])
+            self.RN[site - 1] = max(self.RN[site - 1], sn)
+            print("RN = " + str(self.RN))
+            if self.has_token == True and self.RN[site - 1] == self.token.LN[site -1] + 1:
+                msg = "TOKEN:" + self.token.encode()
+                print("TOKEN, " + str(self.sid) + " --> " + str(site))
+                self.comms.send(site, str(msg))
+        elif cmd[0] == "TOKEN":
+            if self.requested_token == False:
+                print("TOKEN received in error ?")
+                return
+
+            # received token, update local token instance
+            self.token.decode(cmd)
+            self.has_token = True
+
+            if self.requested_token == True:
+                self.enter_cs()
