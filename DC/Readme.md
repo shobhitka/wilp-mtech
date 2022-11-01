@@ -78,4 +78,10 @@ The above define 4 sites, S(i) with i = 1..4
 6. All relevant messages and state of RN and Token [LN, Q] will be printed on the console at every state change
 7. We can exit the applicatin by "exit" command or by using "CTRL+C"
 
+## Sample video demo of the application usage
+
+https://user-images.githubusercontent.com/11071733/199182369-fc15abb3-7a94-4c28-b235-ef5a07a75cd5.mp4
+
+
+
 
