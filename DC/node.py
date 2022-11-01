@@ -158,7 +158,6 @@ class Node:
         if not self.token.q.empty():
             next = self.token.q.get()
             msg = "TOKEN:" + str(self.sid) + ":" + self.token.encode()
-            print(msg)
             print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(next))
             self.dump_token()
             self.comms.send(next, msg)
