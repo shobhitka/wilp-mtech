@@ -17,7 +17,7 @@ class ChannelThread(threading.Thread):
             try:
                 # receive message and dump them for now
                 bytes, address = self.chmgr.receive_messages()
-                print("\nMsg: " + bytes.decode() + ", from: " + str(address))
+                #print("\nMsg: " + bytes.decode() + ", from: " + str(address))
 
                 self.node.callback(bytes.decode())
 

@@ -17,10 +17,10 @@ class Token:
         return ','.join(str(item) for item in self.LN) + ":" + ",".join(str(item) for item in (list(self.q.queue))) + ":"
 
     def decode(self, data):
-        ln_list = data[1].split(",")
+        ln_list = data[2].split(",")
         self.LN = [ int(item) for item in ln_list ]
 
-        q_list = data[2].split(",")
+        q_list = data[3].split(",")
         self.q = queue.Queue()
         for item in q_list:
             if item == '':
@@ -54,8 +54,13 @@ class Node:
             sys.exit("File parsing error")
 
     def dump_info(self):
-        print("All site info: " + str(self.sites))
-        print(f"RN[{self.sid}]: " + str(self.RN))
+        #print("All site info: " + str(self.sites))
+        print(f"RN: " + str(self.RN))
+
+        if self.has_token:
+            print(f"HAS_TOKEN: {self.has_token}")
+            print("LN: " + str(self.token.LN))
+            print(" Q: " + str(list(self.token.q.queue)))
 
     def initialize(self):
         try:
@@ -120,7 +125,7 @@ class Node:
         print("Exitting the critical section")
 
         # update the last processed request
-        self.token.LN[self.sid] = self.RN[self.sid]
+        self.token.LN[self.sid - 1] = self.RN[self.sid - 1]
 
         for key in self.sites:
             if key == self.sid:
@@ -131,13 +136,14 @@ class Node:
                 if self.RN[key - 1] == self.token.LN[key - 1] + 1:
                     self.token.q.put(key)
 
-        print("LN: " + str(self.token.LN))
-        print(" Q: " + str(list(self.token.q.queue)))
         if not self.token.q.empty():
             next = self.token.q.get()
-            msg = "TOKEN:" + self.token.encode()
-            print("TOKEN, " + str(self.sid) + " --> " + str(key))
+            msg = "TOKEN:" + str(self.sid) + ":" + self.token.encode()
+            print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(key))
             self.comms.send(next, msg)
+            self.has_token = False
+
+        self.dump_info()
 
     def enter_cs(self):
         if self.has_token == True:
@@ -151,7 +157,7 @@ class Node:
         else:
             # increament local SN
             self.RN[self.sid - 1] += 1
-            print("RN = " + str(self.RN))
+            self.dump_info()
 
             # broadcast REQUEST message
             msg = "REQUEST:" +  str(self.sid) + ":" + str(self.RN[self.sid - 1])
@@ -159,7 +165,7 @@ class Node:
                 if key == self.sid:
                     continue
                 else:
-                    print("REQUEST, " + str(self.sid) + " --> " + str(key) + ", SN: " + str(self.RN[self.sid]))
+                    print("[SEND][REQUEST] " + str(self.sid) + " --> " + str(key) + ", SN: " + str(self.RN[self.sid]))
                     self.comms.send(key, str(msg))
                     self.requested_token = True
 
@@ -171,15 +177,21 @@ class Node:
             site = int(cmd[1])
             sn = int(cmd[2])
             self.RN[site - 1] = max(self.RN[site - 1], sn)
-            print("RN = " + str(self.RN))
-            if self.has_token == True and self.RN[site - 1] == self.token.LN[site -1] + 1:
-                msg = "TOKEN:" + self.token.encode()
-                print("TOKEN, " + str(self.sid) + " --> " + str(site))
+            print(f"[RECV][REQUEST] Msg from site: {site}, SN: {sn}")
+
+            if self.has_token == True and self.RN[site - 1] == self.token.LN[site - 1] + 1:
+                msg = "TOKEN:" + str(self.sid) + ":" + self.token.encode()
+                print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(site))
                 self.comms.send(site, str(msg))
+                self.has_token = False
+
+            self.dump_info()
         elif cmd[0] == "TOKEN":
             if self.requested_token == False:
                 print("TOKEN received in error ?")
                 return
+
+            print(f"[RECV][TOKEN] Msg from site: {cmd[1]}")
 
             # received token, update local token instance
             self.token.decode(cmd)
