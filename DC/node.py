@@ -23,7 +23,7 @@ class Token:
         for item in q_list:
             if item == '':
                 break
-            self.q.put(item)
+            self.q.put(int(item))
 
 class Node:
     def __init__(self, sid):
@@ -53,14 +53,17 @@ class Node:
         except:
             sys.exit("File parsing error")
 
+    def dump_token(self):
+        print("LN: " + str(self.token.LN))
+        print(" Q: " + str(list(self.token.q.queue)))
+
     def dump_info(self):
         #print("All site info: " + str(self.sites))
         print(f"RN: " + str(self.RN))
 
-        if self.has_token:
+        if self.has_token and not self.in_cs:
             print(f"HAS_TOKEN: {self.has_token}")
-            print("LN: " + str(self.token.LN))
-            print(" Q: " + str(list(self.token.q.queue)))
+            self.dump_token()
 
     def initialize(self):
         try:
@@ -128,9 +131,13 @@ class Node:
     def cs_function(self):
         print("Executing critical section")
 
-        sleep(randint(5,15))
+        val = randint(5,15)
+        for i in range(val):
+            print(".", end="")
+            sys.stdout.flush()
+            sleep(1)
 
-        print("Exitting the critical section")
+        print("\nExitting the critical section")
 
         # update the last processed request
         self.token.LN[self.sid - 1] = self.RN[self.sid - 1]
@@ -144,10 +151,13 @@ class Node:
                 if self.RN[key - 1] == self.token.LN[key - 1] + 1:
                     self.token.q.put(key)
 
+        self.dump_token()
         if not self.token.q.empty():
             next = self.token.q.get()
             msg = "TOKEN:" + str(self.sid) + ":" + self.token.encode()
+            print(msg)
             print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(next))
+            self.dump_token()
             self.comms.send(next, msg)
             self.has_token = False
 
@@ -206,6 +216,7 @@ class Node:
             # received token, update local token instance
             self.token.decode(cmd)
             self.has_token = True
+            self.dump_token()
 
             if self.requested_token == True:
                 self.requested_token = False
