@@ -48,12 +48,13 @@ The above define 4 sites, S(i) with i = 1..4
 
 ## Basic steps
 
-1. Start all the sites in different terminals using following command
+1. Run everything from inside the package folder. Ensure that system.cfg is available at the same level as the python files
+2. Start all the sites in different terminals using following command
     ```
     python3 algo.py -i <site_id>
     ```
-2. If successfully initialized the application will drop in a command line shell for the site as given below
-3. We can type "help" to see what commands are supported
+3. If successfully initialized the application will drop in a command line shell for the site as given below
+4. We can type "help" to see what commands are supported
     ```
     ❯ python3 algo.py -i 1
     Parsed system configuration.
@@ -71,13 +72,16 @@ The above define 4 sites, S(i) with i = 1..4
     enter: enter critical section
     (site:1)$
     ```
-4. **Note that Site 1 always starts with the token**
-5. We can then type "enter" command to try to enter CS at the site prompt.
-6. We can type "enter" on multiple sites one after the other if needed and algorithm will take care of token management
-7. When a site enters critical section, it does a random sleep between 5s to 10s and the processing is indicated by increasing number of "." on the terminal
-8. All relevant messages and state of RN and Token [LN, Q] will be printed on the console at every state change
-9. We can exit the application by "exit" command or by using "CTRL+C"
-10. “dump” command can be used anytime to dump the state of LN, RN and the Token Queue
+5. **Note that Site 1 always starts with the token**
+6. We can then type "enter" command to try to enter CS at the site prompt.
+7. We can type "enter" on multiple sites one after the other if needed and algorithm will take care of token management
+8. When a site enters critical section, it does a random sleep between 5s to 10s and the processing is indicated by increasing number of "." on the terminal
+9. All relevant messages and state of RN and Token [LN, Q] will be printed on the console at every state change
+10. We can exit the application by "exit" command or by using "CTRL+C"
+11. “dump” command can be used anytime to dump the state of LN, RN and the Token Queue
+12. We can continue any number of iterations with the running set of applications. No need to restart them. But in case you restart one, remember to restart all
+13. Algorithm can be tested with any order of sites trying to enter CS. Feel free to play with the sequence
+
 
 ## Sample video demo of the application usage
 
