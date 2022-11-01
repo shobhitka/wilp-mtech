@@ -1,11 +1,9 @@
-from lib2to3.pgen2 import token
 import queue
-from random import randint
 import sys
 import threading
+import signal
 from time import sleep
-from token import tok_name
-from typing import Tuple
+from random import randint
 from channel import ChannelMgr
 
 class Token:
@@ -87,6 +85,9 @@ class Node:
             else:
                 self.has_token = False
             self.requested_token = False
+
+            # Initialize signal hanlder for SIGINT
+            signal.signal(signal.SIGINT, self.signal_handler)
 
             print(f"Site ready: {self.sid}, HAS_TOKEN: {self.has_token}")
 
@@ -209,3 +210,9 @@ class Node:
             if self.requested_token == True:
                 self.requested_token = False
                 self.enter_cs()
+
+    def signal_handler(self, signal, frame):
+        print("Cleaning up ... ")
+        self.comms.stop_receiver()
+        sys.exit("Exiting")
+
