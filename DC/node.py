@@ -153,7 +153,7 @@ class Node:
             # start a thread to execute CS; simulated with random sleep
             th = threading.Thread(target = self.cs_function)
             th.start()
-            th.join()
+            #th.join()
         else:
             # increament local SN
             self.RN[self.sid - 1] += 1
@@ -165,7 +165,7 @@ class Node:
                 if key == self.sid:
                     continue
                 else:
-                    print("[SEND][REQUEST] " + str(self.sid) + " --> " + str(key) + ", SN: " + str(self.RN[self.sid]))
+                    print("[SEND][REQUEST] " + str(self.sid) + " --> " + str(key) + ", SN: " + str(self.RN[self.sid - 1]))
                     self.comms.send(key, str(msg))
                     self.requested_token = True
 
