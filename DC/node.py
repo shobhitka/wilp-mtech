@@ -48,6 +48,7 @@ class Node:
                 input.close()
                 print("Parsed system configuration.")
                 self.RN = [ 0 for i in range(len(self.sites))]
+
         except IOError:
             sys.exit("System config file could not be found/opened: system.cfg")
         except:
@@ -94,6 +95,8 @@ class Node:
 
             print(f"Site ready: {self.sid}, HAS_TOKEN: {self.has_token}")
 
+        except KeyError:
+            sys.exit(f"Invalid site id: {self.sid}. Refer the system.cfg file")
         except:
             sys.exit("Failed initializing site")
 
