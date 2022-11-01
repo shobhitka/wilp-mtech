@@ -32,6 +32,8 @@ class Node:
         self.sites = {}
         self.comms = None
         self.sid = sid
+        self.in_cs = False
+        self.requested_token = False
 
         # parse the config file to know about all the sites
         # in the distributed system
@@ -107,7 +109,12 @@ class Node:
         elif cmd == "dump":
             self.dump_info()
         elif cmd == "enter":
-            self.enter_cs()
+            if self.requested_token:
+                print("Already requested token")
+            elif self.in_cs:
+                print("Already executing CS")
+            else:
+                self.enter_cs()
 
     def start(self):
         while 1:
@@ -139,9 +146,11 @@ class Node:
         if not self.token.q.empty():
             next = self.token.q.get()
             msg = "TOKEN:" + str(self.sid) + ":" + self.token.encode()
-            print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(key))
+            print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(next))
             self.comms.send(next, msg)
             self.has_token = False
+
+        self.in_cs = False
 
         self.dump_info()
 
@@ -179,7 +188,7 @@ class Node:
             self.RN[site - 1] = max(self.RN[site - 1], sn)
             print(f"[RECV][REQUEST] Msg from site: {site}, SN: {sn}")
 
-            if self.has_token == True and self.RN[site - 1] == self.token.LN[site - 1] + 1:
+            if self.has_token == True and self.in_cs == False and self.RN[site - 1] == self.token.LN[site - 1] + 1:
                 msg = "TOKEN:" + str(self.sid) + ":" + self.token.encode()
                 print(f"[SEND][TOKEN] " + str(self.sid) + " --> " + str(site))
                 self.comms.send(site, str(msg))
@@ -198,4 +207,5 @@ class Node:
             self.has_token = True
 
             if self.requested_token == True:
+                self.requested_token = False
                 self.enter_cs()
