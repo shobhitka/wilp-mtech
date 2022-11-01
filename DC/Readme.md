@@ -82,6 +82,12 @@ The above define 4 sites, S(i) with i = 1..4
 
 https://user-images.githubusercontent.com/11071733/199182369-fc15abb3-7a94-4c28-b235-ef5a07a75cd5.mp4
 
+## Sample screenshot at end of one iteration
+1. Do "enter" of Site 2
+2. Do "enter" on site 4 while site 2 is in CS
+3. Do "enter" on site 3 while Site 2 is still in CS
+4. See the sequence of messages and RN, Ln, Q states in the below screenshot
 
+![Screenshot from 2022-11-01 13-12-59](https://user-images.githubusercontent.com/11071733/199184077-40268ef7-c5fb-41b9-9968-3056d1e39670.png)
 
 
