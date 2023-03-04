@@ -24,7 +24,7 @@ int sc_main (int argc, char* argv[])
 		int i = 0;
 		// Connect the DUT
 		my_house house("house");
-		//house.clock(clock);
+		house.clock(clock);
 		house.switch_p1(switch_p1);
 		house.switch_p2(switch_p2);
 		house.light_l1(light_l1);

@@ -38,6 +38,7 @@ static int machine[STATE_MAX][SIGNAL_MAX] = {
 
 SC_MODULE(my_house) {
 
+	sc_in_clk clock;
 	sc_in<bool> switch_p1;
 	sc_in<bool> switch_p2;
 
@@ -71,8 +72,8 @@ SC_MODULE(my_house) {
 		curr_state = machine[curr_state][curr_signal];
 		light_state lt_state = lights[curr_state];
 		light_l1.write(lt_state.l1);
-		light_l1.write(lt_state.l2);
-		light_l1.write(lt_state.l3);
+		light_l2.write(lt_state.l2);
+		light_l3.write(lt_state.l3);
 
 		cout << "@" << sc_time_stamp() << " L1: " << lt_state.l1 << ", L2: " << lt_state.l2 << ", L3: " << lt_state.l3 << "\n" << endl;
 		curr_signal = SIGNAL_MAX;
