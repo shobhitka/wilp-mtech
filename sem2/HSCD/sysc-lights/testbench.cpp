@@ -26,7 +26,7 @@ int sc_main (int argc, char* argv[])
 		my_house house("house");
 		//house.clock(clock);
 		house.switch_p1(switch_p1);
-		house.switch_p2(switch_p1);
+		house.switch_p2(switch_p2);
 		house.light_l1(light_l1);
 		house.light_l2(light_l2);
 		house.light_l3(light_l3);
@@ -52,7 +52,7 @@ int sc_main (int argc, char* argv[])
 
 		RUN_CLOCK(10);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
-		switch_p2 = 1;    // Press P1
+		switch_p2 = 1;    // Press P2
 		RUN_CLOCK(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
 		switch_p2 = 0;    // Release P2
@@ -79,7 +79,6 @@ int sc_main (int argc, char* argv[])
 		switch_p1 = 0;    // Release P1
 
 		RUN_CLOCK(20);
-
 		sc_start(-1);
 		return 0;// Terminate simulation
 }

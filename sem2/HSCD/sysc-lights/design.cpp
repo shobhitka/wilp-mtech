@@ -46,11 +46,11 @@ SC_MODULE(my_house) {
 	sc_out<bool> light_l3;
 
 	int curr_signal, curr_state;
+	int change_state;
 
 	void control_lights() {
 		int sw1 = switch_p1.read();
 		int sw2 = switch_p2.read();
-		int change_state = 0;
 
 		if (sw1 == 1) {
 			curr_signal = SIGNAL_P1;
@@ -74,7 +74,9 @@ SC_MODULE(my_house) {
 		light_l1.write(lt_state.l2);
 		light_l1.write(lt_state.l3);
 
-		cout << "L1: " << lt_state.l1 << ", L2: " << lt_state.l2 << ", L3: " << lt_state.l3 << endl;
+		cout << "@" << sc_time_stamp() << " L1: " << lt_state.l1 << ", L2: " << lt_state.l2 << ", L3: " << lt_state.l3 << "\n" << endl;
+		curr_signal = SIGNAL_MAX;
+		change_state = 0;
 	}
 
 	SC_CTOR(my_house) {
