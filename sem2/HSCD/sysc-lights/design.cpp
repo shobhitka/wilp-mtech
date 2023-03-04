@@ -38,7 +38,6 @@ static int machine[STATE_MAX][SIGNAL_MAX] = {
 
 SC_MODULE(my_house) {
 
-	sc_in_clk clock;
 	sc_in<bool> switch_p1;
 	sc_in<bool> switch_p2;
 
@@ -46,27 +45,28 @@ SC_MODULE(my_house) {
 	sc_out<bool> light_l2;
 	sc_out<bool> light_l3;
 
-	int signal_p1, signal_p2;
 	int curr_signal, curr_state;
 
 	void control_lights() {
+		int sw1 = switch_p1.read();
+		int sw2 = switch_p2.read();
+		int change_state = 0;
 
-		if (switch_p1.read() == 1) {
-			signal_p1 = 1;
-		} else if (signal_p1 == 1) {
-			// was pressed and released
+		if (sw1 == 1) {
 			curr_signal = SIGNAL_P1;
-		} else if (switch_p2.read() == 1) {
-			signal_p2 = 1;
-		} else if (signal_p2 == 1) {
-			// was pressed and released
+		} else if (sw2 == 1) {
 			curr_signal = SIGNAL_P2;
+		} else if (sw1 == 0 && curr_signal == SIGNAL_P1) {
+			change_state = 1;
+		} else if (sw2 == 0 && curr_signal == SIGNAL_P2) {
+			change_state = 1;
 		} else {
 			return;
 		}
 
-		signal_p1 = 0;
-		signal_p2 = 0;
+		if (!change_state) {
+			return;
+		}
 
 		curr_state = machine[curr_state][curr_signal];
 		light_state lt_state = lights[curr_state];
@@ -74,20 +74,16 @@ SC_MODULE(my_house) {
 		light_l1.write(lt_state.l2);
 		light_l1.write(lt_state.l3);
 
-		//cout << "L1: " << lt_state.l1 ? "ON" : "OFF" << ", L2: " << lt_state.l2 ? "ON" : "OFF" << ", L3: " << lt_state.l3 ? "ON" : "OFF" << endl;
 		cout << "L1: " << lt_state.l1 << ", L2: " << lt_state.l2 << ", L3: " << lt_state.l3 << endl;
-
-		curr_signal = -1;
 	}
 
 	SC_CTOR(my_house) {
 		cout << "Initializing the house" << endl;
 		curr_state = STATE_0;
-		signal_p1 = 0;
-		signal_p2 = 0;
-		curr_signal = -1;
+		curr_signal = SIGNAL_MAX;
 
 		SC_METHOD(control_lights);
-		sensitive << clock.pos();
+		sensitive << switch_p1;
+		sensitive << switch_p2;
 	}
 };
