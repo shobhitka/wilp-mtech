@@ -3,12 +3,12 @@
 
 using namespace std;
 
-#define RUN_CLOCK(duration) \
+#define RUN_SIM(duration) \
 		for (i = 0; i < duration; i++) { \
 				clock = 0; \
 				sc_start(1, SC_NS); \
 				clock = 1; \
-				sc_start(1, SC_NS);\
+				sc_start(1, SC_NS); \
 		} \
 
 int sc_main (int argc, char* argv[]) 
@@ -22,7 +22,7 @@ int sc_main (int argc, char* argv[])
 		sc_signal<bool> light_l3;
 
 		int i = 0;
-		// Connect the DUT
+		// Initialize and connect to the DUT
 		my_house house("house");
 		house.clock(clock);
 		house.switch_p1(switch_p1);
@@ -36,49 +36,103 @@ int sc_main (int argc, char* argv[])
 		switch_p1 = 0;
 		switch_p2 = 0;
 
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
 		switch_p1 = 1;    // Press P1
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
 		switch_p1 = 0;    // Release P1
 
-		RUN_CLOCK(10);
+		RUN_SIM(10);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
 		switch_p1 = 1;    // Press P1
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
 		switch_p1 = 0;    // Release P1
 
-		RUN_CLOCK(10);
+		RUN_SIM(10);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
 		switch_p2 = 1;    // Press P2
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
 		switch_p2 = 0;    // Release P2
 
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
 		switch_p2 = 1;    // Press P2
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
 		switch_p2 = 0;    // Release P2
 
-		RUN_CLOCK(10);
+		RUN_SIM(10);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
 		switch_p2 = 1;    // Press P2
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
 		switch_p2 = 0;    // Release P2
 
-		RUN_CLOCK(10);
+		RUN_SIM(10);
 		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
 		switch_p1 = 1;    // Press P1
-		RUN_CLOCK(5);
+		RUN_SIM(5);
 		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
 		switch_p1 = 0;    // Release P1
 
-		RUN_CLOCK(20);
+		RUN_SIM(10);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
+		switch_p2 = 1;    // Press P2
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
+		switch_p2 = 0;    // Release P2
+
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
+		switch_p2 = 1;    // Press P2
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
+		switch_p1 = 1;    // Press P1
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
+		switch_p2 = 0;    // Release P2
+		RUN_SIM(10);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
+		switch_p1 = 0;    // Release P1
+
+		RUN_SIM(10);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
+		switch_p1 = 1;    // Press P1
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
+		switch_p1 = 0;    // Release P1
+
+		RUN_SIM(10);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
+		switch_p2 = 1;    // Press P2
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
+		switch_p2 = 0;    // Release P2
+
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P2" << endl;
+		switch_p2 = 1;    // Press P2
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
+		switch_p1 = 1;    // Press P1
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
+		switch_p1 = 0;    // Release P1
+		RUN_SIM(10);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P2" << endl;
+		switch_p2 = 0;    // Release P2
+
+		RUN_SIM(10);
+		cout << "@" << sc_time_stamp() <<" Press Switch: P1" << endl;
+		switch_p1 = 1;    // Press P1
+		RUN_SIM(5);
+		cout << "@" << sc_time_stamp() <<" Release Switch: P1" << endl;
+		switch_p1 = 0;    // Release P1
+		RUN_SIM(20);
+
 		sc_start(-1);
 		return 0;// Terminate simulation
 }
