@@ -1,9 +1,15 @@
 #include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string.h>
+#include <sys/wait.h>
 
 int main()
 {
-    int pid_t pid1, pid2, pid3;
-    int pipe1[2], pipe2[2], pip3[2];
+    pid_t pid1, pid2, pid3;
+    int pipe1[2], pipe2[2], pipe3[2];
     char buff[16];
 
     pipe(pipe1);
@@ -11,7 +17,7 @@ int main()
     pipe(pipe3);
 
     pid1 = fork(); // c1
-    if (pid == 0) {
+    if (pid1 == 0) {
         // first child, needs to run last
         
         // close all unused pipe FDs as this is last process and no one is waiting on this. 
@@ -20,7 +26,7 @@ int main()
         close(pipe2[0]); close(pipe2[1]);
 
         // block for signal with pipe message from parent, as parent is second last and should signal c1
-        read(pipe3[0], buf, 16);
+        read(pipe3[0], buff, 16);
 
         printf("Executing c1\n");
         
@@ -29,7 +35,7 @@ int main()
         
     } else {
         // parent, needs to run second last just before c1
-        if (pid < 0) {
+        if (pid1 < 0) {
             perror("fork");
             exit(-1);
         }
@@ -63,7 +69,7 @@ int main()
             }
 
             pid3 = fork(); // c3
-            if (pid == 0) {
+            if (pid3 == 0) {
                 // child 3, needs to execute first, start immidiately
                 printf("Executing c3\n");
 
@@ -72,7 +78,7 @@ int main()
                 close(pipe3[0]); close(pipe3[1]);
 
                 // signal c2 to execute next
-                write(pipe1[1], "c2-start", strlen("c2-start");
+                write(pipe1[1], "c2-start", strlen("c2-start"));
 
                 // done synchronising
                 close(pipe1[1]);
@@ -93,15 +99,15 @@ int main()
                 printf("Executing p\n");
 
                 // wait for c3 and c2 to finish, would be done anyways
-                wait(); wait();
+                wait(NULL); wait(NULL);
 
                 // signal c1 to run finally
-                write(pipe3[1], "c1-start", strlen("c1-start");
+                write(pipe3[1], "c1-start", strlen("c1-start"));
 
                 // done synchronising
                 close(pipe2[0]); close(pipe3[1]);
 
-                wait(); // dont'call if we want parent to terminate after signalling c1, in which case c1 beocomes zombie
+                wait(NULL); // dont'call if we want parent to terminate after signalling c1, in which case c1 beocomes zombie
             }
         }
     }
