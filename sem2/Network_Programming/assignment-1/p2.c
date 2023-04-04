@@ -73,6 +73,45 @@ int start_server(int port, int conn_queue)
     return srvfd;
 }
 
+void run_child(int id, int srv_port)
+{
+    sprintf(TAG, "CHILD-%d", id);
+    /* child, try to connect to the server and retry till server is up and running */
+    int serverfd;
+    char data[MAX_MSG_LEN];
+    struct sockaddr_in server;
+
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = inet_addr (SERVER_IP);
+    server.sin_port = htons (srv_port);
+    serverfd = socket (AF_INET, SOCK_STREAM, 0);
+    if (serverfd < 0) {
+        LOG(TAG, "socket() failed: %s\n", strerror(errno));
+        exit(-4);
+    }
+
+    /* keep trying till server is available to accept connections */
+    while(1) {
+        int ret = connect (serverfd, (struct sockaddr *) &server, sizeof (server));
+        if (ret < 0) {
+            LOG(TAG, "connect() failed: %s, waiting for server to be ready\n", strerror(errno));
+            sleep(1);
+            continue;
+        } else {
+            break; /* server up and we are connected */
+        }
+    }
+
+    /* child messgae loop */
+    while (1) {
+        sprintf(data, "hello");
+        write(serverfd, data, strlen(data));
+        sleep (2);
+    }
+
+    exit(0);
+}
+
 int main(int argc, char *argv[])
 {
     int opt, port, childs, srvfd;
@@ -121,39 +160,8 @@ int main(int argc, char *argv[])
             close(srvfd);
             exit (-3);
         } else if (pid == 0) {
-            sprintf(TAG, "CHILD-%d", i + 1);
-            /* child, try to connect to the server and retry till server is up and running */
-            int serverfd;
-            char data[MAX_MSG_LEN];
-            struct sockaddr_in server;
-
-            server.sin_family = AF_INET;
-            server.sin_addr.s_addr = inet_addr (SERVER_IP);
-            server.sin_port = htons (port);
-            serverfd = socket (AF_INET, SOCK_STREAM, 0);
-            if (serverfd < 0) {
-                LOG(TAG, "socket() failed: %s\n", strerror(errno));
-                exit(-4);
-            }
-            while(1) {
-                int ret = connect (serverfd, (struct sockaddr *) &server, sizeof (server));
-                if (ret < 0) {
-                    LOG(TAG, "connect() failed: %s, waiting for server to be ready\n", strerror(errno));
-                    sleep(1);
-                    continue;
-                } else {
-                    LOG(TAG, "connected to server\n");
-                    break; /* server up and we are connected */
-                }
-            }
-
-            while (1) {
-                sprintf(data, "hello");
-                write(serverfd, data, strlen(data));
-                sleep (2);
-            }
-
-            exit(0);
+            /* use child number as its id */
+            run_child(i + 1, port);
         } else {
             /* parent, fork the next child */
             continue;
@@ -205,6 +213,7 @@ int main(int argc, char *argv[])
 
             int clifd = accept(srvfd, (struct sockaddr *) &cliaddr, &clilen);
             if (clifd > 0) {
+                LOG(TAG, "child connected to server\n");
                 sockets[count] = clifd;
                 count++;
             } else {
@@ -228,7 +237,7 @@ int main(int argc, char *argv[])
 
                 LOG(TAG, "received message: %s\n", buff);
 
-                /* send this message to all clients */
+                /* send this message to all connected clients */
                 for (int j = 1; j < count; j++) {
                     if (i == j)
                         continue; // don't send to the same client who sent the message
