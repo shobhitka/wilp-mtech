@@ -28,8 +28,9 @@
 #include <time.h>
 #include <errno.h>
 
-#define MAX_MSG_LEN     8
-#define SERVER_IP       "127.0.0.1"
+#define MAX_MSG_LEN         8
+#define LOOPBACK_IP           "127.0.0.1"
+#define CLIENT_PORT_START   10000
 
 char TAG[12];
 
@@ -58,11 +59,17 @@ int start_server(int port, int conn_queue)
 {
     int srvfd;
     struct sockaddr_in server, client;
+    int flag = 1;
 
     srvfd = socket (AF_INET, SOCK_STREAM, 0);
+
+    bzero(&server, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl (INADDR_ANY);
     server.sin_port = htons (port);
+
+    /* Set socket option to resue addr */
+	setsockopt(srvfd, SOL_SOCKET, SO_REUSEPORT, (char *) &flag, sizeof(int));
 
     if(bind(srvfd, (struct sockaddr *) &server, sizeof (server)) < 0) {
         LOG(TAG, "bind failed: %s\n", strerror(errno));
@@ -73,21 +80,37 @@ int start_server(int port, int conn_queue)
     return srvfd;
 }
 
-void run_child(int id, int srv_port)
+void run_child(int id, int srv_port, int cport)
 {
-    sprintf(TAG, "CHILD-%d", id);
-    /* child, try to connect to the server and retry till server is up and running */
-    int serverfd;
-    char data[MAX_MSG_LEN];
-    struct sockaddr_in server;
+    sprintf(TAG, "CHILD-%d", cport);
 
+    /* child, try to connect to the server and retry till server is up and running */
+    int serverfd, flag = 1;
+    char data[MAX_MSG_LEN];
+    struct sockaddr_in server, client;
+
+    bzero(&server, sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = inet_addr (SERVER_IP);
+    server.sin_addr.s_addr = inet_addr (LOOPBACK_IP);
     server.sin_port = htons (srv_port);
     serverfd = socket (AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
         LOG(TAG, "socket() failed: %s\n", strerror(errno));
         exit(-4);
+    }
+
+    /* enable reuse port */
+    setsockopt(serverfd, SOL_SOCKET, SO_REUSEPORT, (char *) &flag, sizeof(int));
+
+    /* Explicitly assigning port number to client which helps in identifying the clients */
+    bzero(&client, sizeof(client));
+    client.sin_family = AF_INET;
+    client.sin_addr.s_addr = INADDR_ANY;
+    client.sin_port = htons(cport);
+    client.sin_addr.s_addr = inet_addr (LOOPBACK_IP);
+
+    if (bind(serverfd, (struct sockaddr *) &client, sizeof(client)) < 0) {
+        LOG(TAG, "client could not bind to dedicated port, using ephemeral port\n");
     }
 
     /* keep trying till server is available to accept connections */
@@ -98,6 +121,7 @@ void run_child(int id, int srv_port)
             sleep(1);
             continue;
         } else {
+            LOG(TAG, "Connected to server");
             break; /* server up and we are connected */
         }
     }
@@ -116,12 +140,13 @@ int main(int argc, char *argv[])
 {
     int opt, port, childs, srvfd;
     char buff[MAX_MSG_LEN];
-    int i;
+    int i, cport;
 
     strcpy(TAG, "SERVER");
+    cport = CLIENT_PORT_START;
 
     /* parse the command line options to get the port and number of childs to spawn */
-    while ((opt = getopt(argc, argv, "p:n:")) != -1) {
+    while ((opt = getopt(argc, argv, "p:n:c:")) != -1) {
         switch(opt) {
             case 'p':
                 port = atoi(optarg);
@@ -129,8 +154,11 @@ int main(int argc, char *argv[])
             case 'n':
                 childs = atoi(optarg);
                 break;
+            case 'c':
+                cport = atoi(optarg);
+                break;
             default:
-                fprintf(stdout, "Usage: %s -p port -n num-childs\n", argv[0]);
+                fprintf(stdout, "Usage: %s -p port -n num-childs [-c child port start]\n", argv[0]);
                 exit(-1);
         }
     }
@@ -142,7 +170,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    LOG(TAG, "Server Configuration: [Port: %d, Num Childs: %d]\n", port, childs);
+    LOG(TAG, "Server Configuration: [Port: %d, Num Childs: %d, Child Port Start: %d]\n", port, childs, cport);
 
     /* initialize the server socket */
     LOG(TAG, "Starting server on port: %d\n", port);
@@ -161,7 +189,7 @@ int main(int argc, char *argv[])
             exit (-3);
         } else if (pid == 0) {
             /* use child number as its id */
-            run_child(i + 1, port);
+            run_child(i + 1, port, cport + i + 1);
         } else {
             /* parent, fork the next child */
             continue;
@@ -172,13 +200,16 @@ int main(int argc, char *argv[])
 
     /* allocate an array for as many client FDs as childs plus 1 for server FD itself */
     int sockets[childs + 1];
+    int ports[childs + 1];
     int count = 0;
     for (i = 0; i < childs + 1; i++) {
         sockets[i] = -1;
+        ports[i] = -1;
     }
 
     /* store the server fd at the first index */
     sockets[0] = srvfd;
+    ports[0] = port;
     count++;
 
     fd_set read_fdset;
@@ -213,8 +244,10 @@ int main(int argc, char *argv[])
 
             int clifd = accept(srvfd, (struct sockaddr *) &cliaddr, &clilen);
             if (clifd > 0) {
-                LOG(TAG, "child connected to server\n");
+                int chport = ntohs(cliaddr.sin_port);
+                LOG(TAG, "<--> [CHILD-%d] connected to server\n", chport);
                 sockets[count] = clifd;
+                ports[count] = chport;
                 count++;
             } else {
                 LOG(TAG, "accept() failed: %s\n", strerror(errno));
@@ -235,7 +268,7 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                LOG(TAG, "received message: %s\n", buff);
+                LOG(TAG, "<-- [CHILD-%d] received message: %s\n", ports[i], buff);
 
                 /* send this message to all connected clients */
                 for (int j = 1; j < count; j++) {
