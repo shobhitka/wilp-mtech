@@ -33,7 +33,7 @@
 #define CLIENT_PORT_START   10000
 #define CHILD_SEND_INTERVAL 2 /* seconds */
 #define CHILD_MSG_STR_LEN   5 /* as per the problem */
-#define SERVER_MSG_CNT_CHK  5 /* after this many messages server sends "hello" to all */
+#define SERVER_MSG_CNT_CHK  20 /* after this many messages server sends "hello" to all */
 
 #define SYMBOL_CONNECT  "<-->"
 #define SYMBOL_RECV_SERVER  "<---"
@@ -106,10 +106,10 @@ void generate_random_string(int length, char *str)
 
 void alarm_handler(int signo)
 {
-    char data[MAX_MSG_LEN];
-    memset(data, 0, MAX_MSG_LEN);
+    char data[CHILD_MSG_STR_LEN];
+    memset(data, 0, CHILD_MSG_STR_LEN);
     generate_random_string(CHILD_MSG_STR_LEN, data);
-    write(serverfd, data, strlen(data));
+    write(serverfd, data, CHILD_MSG_STR_LEN);
 
     alarm(CHILD_SEND_INTERVAL);
 }
@@ -121,7 +121,7 @@ void run_child(int id, int srv_port, int cport)
 
     /* child, try to connect to the server and retry till server is up and running */
     int flag = 1;
-    char data[MAX_MSG_LEN];
+    char buff[CHILD_MSG_STR_LEN];
     struct sockaddr_in server, client;
 
     bzero(&server, sizeof(server));
@@ -165,20 +165,21 @@ void run_child(int id, int srv_port, int cport)
 
     /* child messgae loop */
     while (1) {
-        char buff[MAX_MSG_LEN];
-        memset(buff, 0, MAX_MSG_LEN);
-        if (read(serverfd, buff, MAX_MSG_LEN) < 0) {
+        memset(buff, 0, CHILD_MSG_STR_LEN);
+        if (read(serverfd, buff, CHILD_MSG_STR_LEN) < 0) {
             LOG(TAG, NULL, "Read failed: %s\n", strerror(errno));
             continue;
         }
 
-        LOG(TAG, SYMBOL_RECV_CHILD, "%s\n", buff);
         if (strcmp(buff, "hello") == 0) {
+            LOG(TAG, SYMBOL_RECV_CHILD, "%s (*)\n", buff);
             /* parent sent hello, reply with "hello parent" */
             if (write(serverfd, "hello parent", strlen("hello parent")) < 0) {
                 LOG(TAG, NULL, "write error: %s\n", strerror(errno));
                 continue;
             }
+        } else {
+            LOG(TAG, SYMBOL_RECV_CHILD, "%s\n", buff);
         }
     }
 
