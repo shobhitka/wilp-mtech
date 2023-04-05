@@ -28,7 +28,7 @@
 #include <time.h>
 #include <errno.h>
 
-#define MAX_MSG_LEN         8
+#define MAX_MSG_LEN         16
 #define LOOPBACK_IP           "127.0.0.1"
 #define CLIENT_PORT_START   10000
 
@@ -121,13 +121,14 @@ void run_child(int id, int srv_port, int cport)
             sleep(1);
             continue;
         } else {
-            LOG(TAG, "Connected to server");
+            LOG(TAG, "<--> [SERVER] Connected.\n");
             break; /* server up and we are connected */
         }
     }
 
     /* child messgae loop */
     while (1) {
+        memset(data, 0, MAX_MSG_LEN);
         sprintf(data, "hello");
         write(serverfd, data, strlen(data));
         sleep (2);
@@ -138,7 +139,7 @@ void run_child(int id, int srv_port, int cport)
 
 int main(int argc, char *argv[])
 {
-    int opt, port, childs, srvfd;
+    int opt, port = 0, childs = 0, srvfd;
     char buff[MAX_MSG_LEN];
     int i, cport;
 
@@ -245,7 +246,7 @@ int main(int argc, char *argv[])
             int clifd = accept(srvfd, (struct sockaddr *) &cliaddr, &clilen);
             if (clifd > 0) {
                 int chport = ntohs(cliaddr.sin_port);
-                LOG(TAG, "<--> [CHILD-%d] connected to server\n", chport);
+                LOG(TAG, "<--> [CHILD-%d] connected.\n", chport);
                 sockets[count] = clifd;
                 ports[count] = chport;
                 count++;
@@ -261,7 +262,7 @@ int main(int argc, char *argv[])
         for (i = 1; i < count; i++) {
             /* check all clients */
             if (FD_ISSET(sockets[i], &read_fdset)) {
-                memset(buff, 0, 8);
+                memset(buff, 0, MAX_MSG_LEN);
                 int ret = read(sockets[i], buff, MAX_MSG_LEN);
                 if (ret < 0) {
                     LOG(TAG, "read() failed: %s\n", strerror(errno));
