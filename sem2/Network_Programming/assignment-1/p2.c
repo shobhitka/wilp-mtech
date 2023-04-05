@@ -29,8 +29,10 @@
 #include <errno.h>
 
 #define MAX_MSG_LEN         16
-#define LOOPBACK_IP           "127.0.0.1"
+#define LOOPBACK_IP         "127.0.0.1"
 #define CLIENT_PORT_START   10000
+#define CHILD_SEND_INTERVAL 2 /* seconds */
+#define CHILD_MSG_STR_LEN   5 /* as per the problem */
 
 char TAG[12];
 
@@ -80,12 +82,36 @@ int start_server(int port, int conn_queue)
     return srvfd;
 }
 
+int serverfd;
+int my_id;
+void generate_random_string(int length, char *str)
+{
+    /* ascii value for lower case alphabets */
+    int lower = 97, upper = 122;
+    srand(time(0));
+    for (int i = 0; i < length; i++) {
+        int num = ((rand() + my_id) % (upper - lower + 1)) + lower;
+        str[i] = num;
+    }
+}
+
+void alarm_handler(int signo)
+{
+    char data[MAX_MSG_LEN];
+    memset(data, 0, MAX_MSG_LEN);
+    generate_random_string(CHILD_MSG_STR_LEN, data);
+    write(serverfd, data, strlen(data));
+
+    alarm(CHILD_SEND_INTERVAL);
+}
+
 void run_child(int id, int srv_port, int cport)
 {
     sprintf(TAG, "CHILD-%d", cport);
+    my_id = id;
 
     /* child, try to connect to the server and retry till server is up and running */
-    int serverfd, flag = 1;
+    int flag = 1;
     char data[MAX_MSG_LEN];
     struct sockaddr_in server, client;
 
@@ -126,11 +152,11 @@ void run_child(int id, int srv_port, int cport)
         }
     }
 
+    signal(SIGALRM, alarm_handler);
+    alarm(CHILD_SEND_INTERVAL);
+
     /* child messgae loop */
     while (1) {
-        memset(data, 0, MAX_MSG_LEN);
-        sprintf(data, "hello");
-        write(serverfd, data, strlen(data));
         sleep (2);
     }
 
