@@ -33,10 +33,15 @@
 #define CLIENT_PORT_START   10000
 #define CHILD_SEND_INTERVAL 2 /* seconds */
 #define CHILD_MSG_STR_LEN   5 /* as per the problem */
+#define SERVER_MSG_CNT_CHK  5 /* after this many messages server sends "hello" to all */
+
+#define SYMBOL_CONNECT  "<-->"
+#define SYMBOL_RECV_SERVER  "<---"
+#define SYMBOL_RECV_CHILD   "--->"
 
 char TAG[12];
 
-void LOG(char *tag, const char * format, ...)
+void LOG(char *tag, char *symbol, const char * format, ...)
 {
 	time_t t;
 	va_list args;
@@ -50,7 +55,11 @@ void LOG(char *tag, const char * format, ...)
     tmp = localtime(&t);
     strftime(timestamp, sizeof(timestamp), "%a %b %d %H:%M:%S", tmp);
 
-    fprintf(stdout, "[%s][%s] ", timestamp, tag);
+    if (symbol == NULL)
+        fprintf(stdout, "[%s][%s] ", timestamp, tag);
+    else
+        fprintf(stdout, "[%s][SERVER] %s [%s] ", timestamp, symbol, tag);
+
     vfprintf(stdout, format, args);
 
     va_end(args);
@@ -74,7 +83,7 @@ int start_server(int port, int conn_queue)
 	setsockopt(srvfd, SOL_SOCKET, SO_REUSEPORT, (char *) &flag, sizeof(int));
 
     if(bind(srvfd, (struct sockaddr *) &server, sizeof (server)) < 0) {
-        LOG(TAG, "bind failed: %s\n", strerror(errno));
+        LOG(TAG, NULL, "bind failed: %s\n", strerror(errno));
         return -1;
     }
 
@@ -121,7 +130,7 @@ void run_child(int id, int srv_port, int cport)
     server.sin_port = htons (srv_port);
     serverfd = socket (AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
-        LOG(TAG, "socket() failed: %s\n", strerror(errno));
+        LOG(TAG, NULL, "socket() failed: %s\n", strerror(errno));
         exit(-4);
     }
 
@@ -136,18 +145,17 @@ void run_child(int id, int srv_port, int cport)
     client.sin_addr.s_addr = inet_addr (LOOPBACK_IP);
 
     if (bind(serverfd, (struct sockaddr *) &client, sizeof(client)) < 0) {
-        LOG(TAG, "client could not bind to dedicated port, using ephemeral port\n");
+        LOG(TAG, NULL, "client could not bind to dedicated port, using ephemeral port\n");
     }
 
     /* keep trying till server is available to accept connections */
     while(1) {
         int ret = connect (serverfd, (struct sockaddr *) &server, sizeof (server));
         if (ret < 0) {
-            LOG(TAG, "connect() failed: %s, waiting for server to be ready\n", strerror(errno));
+            LOG(TAG, NULL, "connect() failed: %s, waiting for server to be ready\n", strerror(errno));
             sleep(1);
             continue;
         } else {
-            LOG(TAG, "<--> [SERVER] Connected.\n");
             break; /* server up and we are connected */
         }
     }
@@ -157,7 +165,21 @@ void run_child(int id, int srv_port, int cport)
 
     /* child messgae loop */
     while (1) {
-        sleep (2);
+        char buff[MAX_MSG_LEN];
+        memset(buff, 0, MAX_MSG_LEN);
+        if (read(serverfd, buff, MAX_MSG_LEN) < 0) {
+            LOG(TAG, NULL, "Read failed: %s\n", strerror(errno));
+            continue;
+        }
+
+        LOG(TAG, SYMBOL_RECV_CHILD, "%s\n", buff);
+        if (strcmp(buff, "hello") == 0) {
+            /* parent sent hello, reply with "hello parent" */
+            if (write(serverfd, "hello parent", strlen("hello parent")) < 0) {
+                LOG(TAG, NULL, "write error: %s\n", strerror(errno));
+                continue;
+            }
+        }
     }
 
     exit(0);
@@ -168,6 +190,7 @@ int main(int argc, char *argv[])
     int opt, port = 0, childs = 0, srvfd;
     char buff[MAX_MSG_LEN];
     int i, cport;
+    int msg_cnt = 0;
 
     strcpy(TAG, "SERVER");
     cport = CLIENT_PORT_START;
@@ -197,13 +220,13 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    LOG(TAG, "Server Configuration: [Port: %d, Num Childs: %d, Child Port Start: %d]\n", port, childs, cport);
+    LOG(TAG, NULL, "Server Configuration: [Port: %d, Num Childs: %d, Child Port Start: %d]\n", port, childs, cport);
 
     /* initialize the server socket */
-    LOG(TAG, "Starting server on port: %d\n", port);
+    LOG(TAG, NULL, "Starting server on port: %d\n", port);
     srvfd = start_server(port, childs);
     if (srvfd < 0) {
-        LOG(TAG, "Failed to start server on port: %d\n", port);
+        LOG(TAG, NULL, "Failed to start server on port: %d\n", port);
         exit(-2);
     }
 
@@ -211,7 +234,7 @@ int main(int argc, char *argv[])
     for (i = 0; i < childs; i++) {
         pid_t pid = fork();
         if (pid < 0) {
-            LOG(TAG, "fork() failed: %s\n", strerror(errno));
+            LOG(TAG, NULL, "fork() failed: %s\n", strerror(errno));
             close(srvfd);
             exit (-3);
         } else if (pid == 0) {
@@ -223,7 +246,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    LOG(TAG, "spawned all childs\n");
+    LOG(TAG, NULL, "spawned all childs\n");
 
     /* allocate an array for as many client FDs as childs plus 1 for server FD itself */
     int sockets[childs + 1];
@@ -259,7 +282,7 @@ int main(int argc, char *argv[])
         */
         int ret = select(sockets[i - 1] + 1, &read_fdset, NULL, NULL, NULL);
         if (ret < 0) {
-            LOG(TAG, "select() failed: %s\n", strerror(errno));
+            LOG(TAG, NULL, "select() failed: %s\n", strerror(errno));
             continue;
         }
 
@@ -272,12 +295,12 @@ int main(int argc, char *argv[])
             int clifd = accept(srvfd, (struct sockaddr *) &cliaddr, &clilen);
             if (clifd > 0) {
                 int chport = ntohs(cliaddr.sin_port);
-                LOG(TAG, "<--> [CHILD-%d] connected.\n", chport);
+                LOG(TAG, NULL, "%s [CHILD-%d] connected.\n", SYMBOL_CONNECT, chport);
                 sockets[count] = clifd;
                 ports[count] = chport;
                 count++;
             } else {
-                LOG(TAG, "accept() failed: %s\n", strerror(errno));
+                LOG(TAG, NULL, "accept() failed: %s\n", strerror(errno));
             }
 
             /* skip checking all other FDs if only one FD was set - server fd */
@@ -291,23 +314,47 @@ int main(int argc, char *argv[])
                 memset(buff, 0, MAX_MSG_LEN);
                 int ret = read(sockets[i], buff, MAX_MSG_LEN);
                 if (ret < 0) {
-                    LOG(TAG, "read() failed: %s\n", strerror(errno));
+                    LOG(TAG, NULL, "read() failed: %s\n", strerror(errno));
                     continue;
                 }
 
-                LOG(TAG, "<-- [CHILD-%d] received message: %s\n", ports[i], buff);
+                /* increment message counts for general messages from client only */
+                if (strcmp(buff, "hello parent") == 0) {
+                    /* just log and continue, dont send this to all */
+                    LOG(TAG, NULL, "%s [CHILD-%d] %s\n", SYMBOL_RECV_SERVER, ports[i], buff);
+                    continue;
+                }
+
+                msg_cnt++;
+
+                LOG(TAG, NULL, "%s [CHILD-%d] %s (%d)\n", SYMBOL_RECV_SERVER, ports[i], buff, msg_cnt);
 
                 /* send this message to all connected clients */
                 for (int j = 1; j < count; j++) {
-                    if (i == j)
+                    if (i == j) {
+                        if (msg_cnt == SERVER_MSG_CNT_CHK) {
+                            if (write(sockets[j], "hello", strlen("hello")) < 0) {
+                                LOG(TAG, NULL, "write error: %s\n", strerror(errno));
+                            }
+                        }
                         continue; // don't send to the same client who sent the message
+                    }
 
                     ret = write(sockets[j], buff, ret);
                     if (ret < 0) {
-                        LOG(TAG, "write() failed: %s\n", strerror(errno));
+                        LOG(TAG, NULL, "write() failed: %s\n", strerror(errno));
                         continue;
                     }
+
+                    if (msg_cnt == SERVER_MSG_CNT_CHK) {
+                        if (write(sockets[j], "hello", strlen("hello")) < 0) {
+                            LOG(TAG, NULL, "write error: %s\n", strerror(errno));
+                        }
+                    }
                 }
+
+                if (msg_cnt == SERVER_MSG_CNT_CHK)
+                    msg_cnt = 0;
             }
         }
     }
