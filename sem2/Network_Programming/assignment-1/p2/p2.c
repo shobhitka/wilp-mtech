@@ -186,6 +186,14 @@ void run_child(int id, int srv_port, int cport)
     exit(0);
 }
 
+void usage(char *name)
+{
+	fprintf(stdout, "Usage: %s -p port -n num-childs [-c child-port-start]\n", name);
+	fprintf(stdout, "-p port: Server port to listen on\n");
+	fprintf(stdout, "-n num-childs: Number of children to spawn as clients\n");
+	fprintf(stdout, "-c child-port-start: Port number to use per child is child id + this number, default 10000\n");
+}
+
 int main(int argc, char *argv[])
 {
     int opt, port = 0, childs = 0, srvfd;
@@ -209,15 +217,15 @@ int main(int argc, char *argv[])
                 cport = atoi(optarg);
                 break;
             default:
-                fprintf(stdout, "Usage: %s -p port -n num-childs [-c child port start]\n", argv[0]);
-                exit(-1);
+                usage(argv[0]);
+				exit(-1);
         }
     }
 
     /* validate the user input */
     if (port == 0 || childs == 0) {
         fprintf(stderr, "Invalid parameters\n");
-        fprintf(stdout, "Usage: %s -p port -n num-childs\n", argv[0]);
+		usage(argv[0]);
         exit(-1);
     }
 

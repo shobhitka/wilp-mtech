@@ -21,6 +21,13 @@
 #include <signal.h>
 #include <time.h>
 
+void usage(char *name)
+{
+    fprintf(stdout, "Usage: %s -n num_childs -m num-signal\n", name);
+	fprintf(stdout, "-n num-childs: Number of children to spawn\n");
+	fprintf(stdout, "-m num-signal: Number of SIGUSR1 signals even child should wait for\n");
+}
+
 int main(int argc, char *argv[])
 {
     int opt, N = 0, M = 0;
@@ -35,7 +42,7 @@ int main(int argc, char *argv[])
                 M = atoi(optarg);
                 break;
             default:
-                fprintf(stdout, "Usage: %s -n num_childs -m num-signal\n", argv[0]);
+				usage(argv[0]);
                 exit(-1);
         }
     }
@@ -43,7 +50,7 @@ int main(int argc, char *argv[])
     /* validate the user input */
     if (N == 0 || M == 0) {
         fprintf(stderr, "Invalid parameters\n");
-        fprintf(stdout, "Usage: %s -n num_childs -m num-signal\n", argv[0]);
+		usage(argv[0]);
         exit(-1);
     }
 
