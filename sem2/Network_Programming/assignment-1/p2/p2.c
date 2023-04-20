@@ -11,6 +11,8 @@
  *     here.
  * (e) After every 20th message server sends "hello" message to all the clients connected to it. Children
  *     simply reply with “hello parent”.
+ *
+ * Author: Shobhit Kumar <2021mt12072@wilp.bits-pilani.ac.in>, <kumar@shobhit.info>
 */
 #include <unistd.h>
 #include <stdio.h>

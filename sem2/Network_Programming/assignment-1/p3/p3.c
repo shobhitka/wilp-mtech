@@ -11,6 +11,8 @@
  * (e) Everey process should print its pid, pid of the sending process, and the number of signals
  *     received. Should print “Terminated Self” when exiting in case of even process. In case of odd
  *     process, print “Terminated by <pid>”.
+ *
+ * Author: Shobhit Kumar <2021mt12072@wilp.bits-pilani.ac.in>, <kumar@shobhit.info>
 */
 #include <unistd.h>
 #include <stdio.h>
