@@ -66,26 +66,28 @@ int main(int argc, char *argv[])
 
                     /* above will be unblocked only if a SIGUSER1 is received, increase the cnt */
                     signal_cnt++;
-                    fprintf(stdout, "SIGUSR1 received: %d <--- %d, cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
+                    fprintf(stdout, "%d: SIGUSR1 received from <--- %d, cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
                     if (signal_cnt > M) {
+                        /* wait for a few seconds before starting terminating sequence */
+                        sleep(2);
+
                         /* send SIGTERM + SIGKILL to the last process sending SIGUSR1 */
                         kill(signal_info.si_pid, SIGTERM);
-                        fprintf(stdout, "SIGTERM sent: %d ---> %d\n", mypid, signal_info.si_pid);
+                        fprintf(stdout, "%d: SIGTERM sent to ---> %d\n", mypid, signal_info.si_pid);
 
-                        sleep(5);
+                        /* give some time to the process to do cleanup */
+                        sleep(3);
 
                         kill(signal_info.si_pid, SIGKILL);
-                        fprintf(stdout, "SIGKILL sent: %d ---> %d\n", mypid, signal_info.si_pid);
+                        fprintf(stdout, "%d: SIGKILL sent to ---> %d\n", mypid, signal_info.si_pid);
 
-                        sleep(1); /* allow the signals to be sent */
+                        sleep(1); /* allow the signals to be sent within kernel */
 
-                        fprintf(stdout, "Terminating Self, pid: %d\n", mypid);
+                        fprintf(stdout, "%d: Terminated Self\n", mypid);
                         break;
                     }
                 }
             } else {
-                //printf("\n");
-                sleep(1);
                 /* odd process */
                 /* send SIGUSR1 to one of the even process before this process */
                 for (int i = 0; i < N; i++) {
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
                     if (pids[i] > 0 && pids[i] % 2 == 0) {
                         /* even process send SIGUSR1 */
                         kill(pids[i], SIGUSR1);
-                        fprintf(stdout, "SIGUSR1 sent: %d ---> %d\n", mypid, pids[i]);
+                        fprintf(stdout, "%d: SIGUSR1 sent to ---> %d\n", mypid, pids[i]);
                         break;
                     }
                 }
@@ -105,31 +107,13 @@ int main(int argc, char *argv[])
 
                 /* above will be unblocked only if a SIGTERM is received, increase the cnt */
                 signal_cnt++;
-                fprintf(stdout, "SIGTERM received: %d <--- %d, cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
-                fprintf(stdout, "Terminating by pid: %d\n", signal_info.si_pid);
+                fprintf(stdout, "%d: SIGTERM received: <--- %d, rcv_cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
+                fprintf(stdout, "%d: Terminated by pid %d\n", mypid, signal_info.si_pid);
                 while(1) {
                     sleep(5); // wait forever for SIGKILL to come and kill me
                 }
             }
 
-#if 0
-            /**
-             * Here in each child pids[] will have pid filled for the childs that have been 
-             * created before this child
-            */
-            fprintf(stdout, "------ %d -----\n", getpid());
-            for (int j = 0; j < N; j++) {
-               // if (pids[j] > 0) {
-                    fprintf(stdout, "pid%d: %d\n", j, pids[j]);
-                //} else {
-                    /* we are filling sequentially, so is < 0 menas after this point no pid */
-                //    break;
-                //}
-            }
-            fprintf(stdout, "\n");
-            while(1)
-                sleep(5);
-#endif
             exit(0);
         } else {
             /* parent process*/
