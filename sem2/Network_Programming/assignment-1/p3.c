@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wait.h>
 #include <signal.h>
+#include <time.h>
 
 int main(int argc, char *argv[])
 {
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 
                     /* above will be unblocked only if a SIGUSER1 is received, increase the cnt */
                     signal_cnt++;
-                    fprintf(stdout, "%d: SIGUSR1 received from <--- %d, cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
+                    fprintf(stdout, "%d: SIGUSR1 received from <--- %d, rcv_cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
                     if (signal_cnt > M) {
                         /* wait for a few seconds before starting terminating sequence */
                         sleep(2);
@@ -88,17 +89,23 @@ int main(int argc, char *argv[])
                     }
                 }
             } else {
+                int indexes[N];
+                int even_cnt = 0;
                 /* odd process */
                 /* send SIGUSR1 to one of the even process before this process */
                 for (int i = 0; i < N; i++) {
                     /* for now find first even and send to that */
                     if (pids[i] > 0 && pids[i] % 2 == 0) {
-                        /* even process send SIGUSR1 */
-                        kill(pids[i], SIGUSR1);
-                        fprintf(stdout, "%d: SIGUSR1 sent to ---> %d\n", mypid, pids[i]);
-                        break;
+                        indexes[even_cnt++] = i;
                     }
                 }
+
+                printf("event cnt: %d\n", even_cnt);
+                /* select random even process and send SIGUSR1 */
+                srand(time(0));
+                int num = rand() % even_cnt;
+                kill(pids[indexes[num]], SIGUSR1);
+                fprintf(stdout, "%d: SIGUSR1 sent to ---> %d\n", mypid, pids[indexes[num]]);
 
                 /* wait for SIGTERM if I am the last sender to make even process signal count = M */
                 sigaddset(&signal_set, SIGTERM);
