@@ -120,24 +120,30 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                /* select random even process and send SIGUSR1 */
-                srand(time(0));
-                int num = rand() % even_cnt;
-                kill(pids[indexes[num]], SIGUSR1);
-                fprintf(stdout, "%d: SIGUSR1 sent to ---> %d\n", mypid, pids[indexes[num]]);
+				if (even_cnt) {
+					/* select random even process and send SIGUSR1 */
+					srand(time(0));
+					int num = rand() % even_cnt;
+					kill(pids[indexes[num]], SIGUSR1);
+					fprintf(stdout, "%d: SIGUSR1 sent to ---> %d\n", mypid, pids[indexes[num]]);
 
-                /* wait for SIGTERM if I am the last sender to make even process signal count = M */
-                sigaddset(&signal_set, SIGTERM);
-                sigprocmask(SIG_BLOCK, &signal_set, NULL);
-                sigwaitinfo(&signal_set, &signal_info);
+					/* wait for SIGTERM if I am the last sender to make even process signal count = M */
+					sigaddset(&signal_set, SIGTERM);
+					sigprocmask(SIG_BLOCK, &signal_set, NULL);
+					sigwaitinfo(&signal_set, &signal_info);
 
-                /* above will be unblocked only if a SIGTERM is received, increase the cnt */
-                signal_cnt++;
-                fprintf(stdout, "%d: SIGTERM received: <--- %d, rcv_cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
-                fprintf(stdout, "%d: Terminated by pid %d\n", mypid, signal_info.si_pid);
-                while(1) {
-                    sleep(5); // wait forever for SIGKILL to come and kill me
-                }
+					/* above will be unblocked only if a SIGTERM is received, increase the cnt */
+					signal_cnt++;
+					fprintf(stdout, "%d: SIGTERM received: <--- %d, rcv_cnt: %d\n", mypid, signal_info.si_pid, signal_cnt);
+					fprintf(stdout, "%d: Terminated by pid %d\n", mypid, signal_info.si_pid);
+				} else {
+					/* no even process before this process, do nothing */
+					;;
+				}
+
+				while(1) {
+					sleep(5); // wait forever for SIGKILL to come and kill me
+				}
             }
 
             exit(0);
