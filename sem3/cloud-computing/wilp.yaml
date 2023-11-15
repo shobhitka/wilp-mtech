@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crb-checker
+  labels:
+    app: crb-checker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: crb-checker
+  template:
+    metadata:
+      labels:
+        app: crb-checker
+    spec:
+      containers:
+      - name: mydb
+        image: shobhitka/wilp-mysql:v1
+        ports:
+        - containerPort: 3360
+      - name: webapp
+        image: shobhitka/wilp-webapp
+        ports:
+        - containerPort: 8080
